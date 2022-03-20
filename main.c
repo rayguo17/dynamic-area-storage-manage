@@ -4,6 +4,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdarg.h>
+#include <unistd.h>
 struct map_t {
     unsigned m_size;
     char *m_addr;
@@ -42,11 +43,12 @@ void unix_error(char *msg);
 
 int main(int argc, char **argv)
 {
-    if(argc != 2 ){
-        printf("usage: %s <size>",argv[0]);
-        return 0;
-    }
-    malloc_size = atoi(argv[1]);
+    // if(argc != 2 ){
+    //     printf("usage: %s <size>",argv[0]);
+    //     return 0;
+    // }
+    // malloc_size = atoi(argv[1]);
+    dup2(1,2);
     char cmdline[MAXLINE];
     verbose=1;
     malloc_size = 1024;
