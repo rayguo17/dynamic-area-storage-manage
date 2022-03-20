@@ -21,8 +21,8 @@ int verbose;
 #define SIZE sizeof(map)
 #define MAXLINE 1024 /*max line size*/
 #define MAXARGS 3
-char *fmalloc(map *maps ,int size);
-int ffree(map *maps, char *addr,int size);
+char *fmalloc(map **maps ,int size);
+int ffree(map **maps, char *addr,int size);
 void logMem(map *maps);
 void printEntry(map *p);
 void eval(char *cmdline);
@@ -99,7 +99,7 @@ void eval(char *cmdline)
         if(verbose){
             printf("malloc size: %d\n",req_size);   
         }
-        fmalloc(cur_map,req_size);
+        fmalloc(&cur_map,req_size);
         if(verbose){
             printf("****maps after fmalloc****\n");
             logMem(coremap);
@@ -117,7 +117,7 @@ void eval(char *cmdline)
         if(verbose){
             printf("free address: %d, size: %d\n",num_addr,free_size);
         }
-        ffree(coremap,numToMem(num_addr),free_size);
+        ffree(&coremap,numToMem(num_addr),free_size);
         if(verbose){
             printf("****maps after ffree****\n");
             logMem(coremap);
@@ -156,7 +156,7 @@ int parseline(char *cmdline,char **argv)
     return argc;
 }
 
-char *fmalloc(map *maps,int size)
+char *fmalloc(map **maps,int size)
 {
 
     char *result;
@@ -164,27 +164,31 @@ char *fmalloc(map *maps,int size)
     int it_time = 0;
     if(verbose){
         printf("start entry: ");
-        printEntry(maps);
+        printEntry(*maps);
     }
-    
-    for(maps;maps->m_size;maps=maps->next){
+    if(*maps == NULL){
+        *maps = coremap;
+    }
+    map *cur = *maps;
+    for(maps;cur->m_size;cur=cur->next){
         if(verbose){
             printf("iterate time: %d\n",it_time);
         }
-        if(maps->m_size>=size){
+        if(cur->m_size>=size){
             if(verbose){
                 printf("matched entry: ");
-                printEntry(maps);
+                printEntry(cur);
             }
-            result = maps->m_addr;
-            maps->m_addr+=size;
+            result = cur->m_addr;
+            cur->m_addr+=size;
             
-            if(maps->m_size == size && maps != maps->next){
+            if(cur->m_size == size && cur != cur->next){
                 //need to delete this entry
-                maps = deleteNode(maps);
+                cur = deleteNode(cur);
             }else{
-                maps->m_size -= size;
+                cur->m_size -= size;
             }
+            *maps = cur;
             return result;
         }
         it_time++;
@@ -195,7 +199,7 @@ char *fmalloc(map *maps,int size)
     return NULL;
 
 }
-int ffree(map *maps,char *addr, int size)
+int ffree(map **maps,char *addr, int size)
 {
     char *start_addr, *end_addr;
     start_addr=addr;
@@ -210,7 +214,7 @@ int ffree(map *maps,char *addr, int size)
         return 0;
     }
     map *cur,*prev,*next;
-    cur = maps;
+    cur = *maps;
     int cnt=0;
     while(cur!=NULL){
         if(cur==cur->next){
@@ -261,7 +265,12 @@ int ffree(map *maps,char *addr, int size)
                 //found the gap it can fit
                 map *tmp = cur->next;
                 while((tmp->m_addr + tmp->m_size) < end_addr && tmp->m_addr > tmp->prior->m_addr){
-                    tmp = deleteNode(tmp);
+                    if(*maps == tmp){
+                        *maps = (tmp = deleteNode(tmp));
+                    }else{
+                        tmp = deleteNode(tmp);
+                    }
+                    
                 }
                 //now tmp is the end_addr gap
                 //have 4 situation now, start addr in/out block,end addr in/out block
@@ -280,8 +289,8 @@ int ffree(map *maps,char *addr, int size)
                         }
                         char *cur_addr = cur->m_addr;
                         int new_size = tmp->m_addr+tmp->m_size-cur->m_addr;
-                        if(coremap==cur){
-                            coremap = deleteNode(cur);
+                        if(*maps==cur){
+                            *maps = deleteNode(cur);
                         }else{
                             deleteNode(cur);
                         }
@@ -340,8 +349,8 @@ int ffree(map *maps,char *addr, int size)
                         tmp->m_size = size;
                         return 1;
                     }
-                    if(coremap == tmp){
-                        coremap = tmp = deleteNode(tmp);
+                    if(*maps == tmp){
+                        *maps = (tmp = deleteNode(tmp));
                     }else{
                         tmp = deleteNode(tmp);
                     }
