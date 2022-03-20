@@ -97,9 +97,14 @@ void eval(char *cmdline)
         }
         int req_size = atoi(argv[1]);
         if(verbose){
-            printf("malloc cmd for size: %d\n",req_size);   
+            printf("malloc size: %d\n",req_size);   
         }
         fmalloc(cur_map,req_size);
+        if(verbose){
+            printf("****maps after fmalloc****\n");
+            logMem(coremap);
+        }
+        
         return ;
     }
     if(strcmp(argv[0],"free")==0){
@@ -113,6 +118,11 @@ void eval(char *cmdline)
             printf("free address: %d, size: %d\n",num_addr,free_size);
         }
         ffree(coremap,numToMem(num_addr),free_size);
+        if(verbose){
+            printf("****maps after ffree****\n");
+            logMem(coremap);
+        }
+        
         return;
 
     }
@@ -169,7 +179,7 @@ char *fmalloc(map *maps,int size)
             result = maps->m_addr;
             maps->m_addr+=size;
             
-            if(maps->m_size == size){
+            if(maps->m_size == size && maps != maps->next){
                 //need to delete this entry
                 maps = deleteNode(maps);
             }else{
@@ -178,6 +188,9 @@ char *fmalloc(map *maps,int size)
             return result;
         }
         it_time++;
+    }
+    if(verbose){
+        printf("not enough free space can be allocated\n");
     }
     return NULL;
 
@@ -202,11 +215,29 @@ int ffree(map *maps,char *addr, int size)
     while(cur!=NULL){
         if(cur==cur->next){
             //only have one entry!
+            if(cur->m_size==0){
+                if(verbose){
+                    printf("唯一表项为空，只需更改表项内容\n");
+                }
+                cur->m_addr = start_addr;
+                cur->m_size = size;
+                return 1;
+            }
+            if(verbose){
+                printf("one entry in map\n");
+            }
             if(cur->m_addr > start_addr){
                 if(cur->m_addr>end_addr){
+                    if(verbose){
+                        printf("不与其他空闲区相邻，创建新项\n");
+                    }
                     insertNode(cur,start_addr,size);
                     return 1;
                 }else{
+                    if(verbose){
+                        printf("与该地址相交addr: %d, size: %d,modifying...\n",memToNum(cur->m_addr),cur->m_size);
+                    }
+                    
                     int new_size = max(2,size,cur->m_size+(cur->m_addr-start_addr));
                     cur->m_addr = start_addr;
                     cur->m_size = new_size;
@@ -237,13 +268,24 @@ int ffree(map *maps,char *addr, int size)
                 if(start_addr < cur->m_addr + cur->m_size){
                     //inside cur block,
                     if(end_addr < tmp->m_addr){
+                        if(verbose){
+                            printf("多表项，与前空闲区相邻，不与后面的空闲区相邻\n");
+                        }
                         int new_size = max(2,end_addr-cur->m_addr,cur->m_size);
                         cur->m_size = new_size;
                         return 1;
                     }else{
+                        if(verbose){
+                            printf("多表项，同时与前后两个空闲区相邻\n");
+                        }
                         char *cur_addr = cur->m_addr;
                         int new_size = tmp->m_addr+tmp->m_size-cur->m_addr;
-                        deleteNode(cur);
+                        if(coremap==cur){
+                            coremap = deleteNode(cur);
+                        }else{
+                            deleteNode(cur);
+                        }
+                        
                         tmp->m_addr = cur_addr;
                         tmp->m_size = new_size;
                         return 1;
@@ -253,9 +295,15 @@ int ffree(map *maps,char *addr, int size)
                     //start addr not inside the block
                     //
                     if(end_addr < tmp->m_addr){
+                        if(verbose){
+                            printf("多表项，不与前后空闲区相邻\n");
+                        }
                         insertNode(cur,start_addr,size);
                         return 1;
                     }else{
+                        if(verbose){
+                            printf("多表项，只和后空闲区相邻\n");
+                        }
                         int new_size = tmp->m_size + (tmp->m_addr-start_addr);
                         tmp->m_addr = start_addr;
                         tmp->m_size = new_size;
@@ -269,9 +317,15 @@ int ffree(map *maps,char *addr, int size)
             if(start_addr >= cur->m_addr){
                 //too big
                 if(start_addr > cur->m_addr + cur->m_size){
+                    if(verbose){
+                        printf("释放地址大于所有表项\n");
+                    }
                     insertNode(cur,start_addr,size);
                     return 1;
                 }else{
+                    if(verbose){
+                        printf("释放地址在最后一个表项附近\n");
+                    }
                     int new_size = max(2,end_addr-cur->m_addr,cur->m_size);
                     cur->m_size = new_size;
                     return 1;
@@ -286,12 +340,23 @@ int ffree(map *maps,char *addr, int size)
                         tmp->m_size = size;
                         return 1;
                     }
-                    tmp = deleteNode(tmp);
+                    if(coremap == tmp){
+                        coremap = tmp = deleteNode(tmp);
+                    }else{
+                        tmp = deleteNode(tmp);
+                    }
+                    
                 }
                 if(end_addr<tmp->m_addr){
+                    if(verbose){
+                        printf("释放地址小于任意表项，结束地址在空闲区外\n");
+                    }
                     insertNode(cur,start_addr,size);
                     return 1;
                 }else{
+                    if(verbose){
+                        printf("释放地址小于任意表项，结束地址在空闲区内\n");
+                    }
                     int new_size = tmp->m_size + (tmp->m_addr-start_addr);
                     tmp->m_addr = start_addr;
                     tmp->m_size = new_size;
@@ -400,7 +465,7 @@ void logMem(map *maps)
             break;
         curr = curr->next;
     }
-    printf("----------result printing end-----------");
+    printf("----------result printing end-----------\n");
 
 }
 void printEntry(map *p)

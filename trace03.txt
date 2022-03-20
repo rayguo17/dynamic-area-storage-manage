@@ -1,3 +1,8 @@
 #
-# trace03.txt - simple malloc free
+# trace03.txt - fmalloc 循环
 #
+malloc 1000
+free 100 30
+free 300 50
+free 500 70
+malloc 70

@@ -1,1 +1,546 @@
-
+#
+# trace01.txt - Properly terminate on EOF.
+#
+initial process done!
+area address: 0x00005620F92762A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> 
+clear process start: 1 entries need to be clean
+1 entries | start address: 0x00005620F92762A0
+#
+# trace02.txt - simple malloc free
+#
+initial process done!
+area address: 0x0000562F6B20F2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 100
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x0000562F6B20F2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 100 size: 924
+cmd> free address: 0, size: 20
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x0000562F6B20F2A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 0 | size: 20 | end address: 20
+start address: 100 | size: 924 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 2 entries need to be clean
+2 entries | start address: 0x0000562F6B20F304
+1 entries | start address: 0x0000562F6B20F2A0
+#
+# trace03.txt - fmalloc 循环
+#
+initial process done!
+area address: 0x00005610E58242A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 1000
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x00005610E58242A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1000 size: 24
+cmd> free address: 100, size: 30
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x00005610E58242A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 30 | end address: 130
+start address: 1000 | size: 24 | end address: 1024
+----------result printing end-----------
+cmd> free address: 300, size: 50
+多表项，不与前后空闲区相邻
+****maps after ffree****
+area address: 0x00005610E58242A0
+malloc size: 1024
+--------total entries: 3-----------
+start address: 100 | size: 30 | end address: 130
+start address: 300 | size: 50 | end address: 350
+start address: 1000 | size: 24 | end address: 1024
+----------result printing end-----------
+cmd> free address: 500, size: 70
+多表项，不与前后空闲区相邻
+****maps after ffree****
+area address: 0x00005610E58242A0
+malloc size: 1024
+--------total entries: 4-----------
+start address: 100 | size: 30 | end address: 130
+start address: 300 | size: 50 | end address: 350
+start address: 500 | size: 70 | end address: 570
+start address: 1000 | size: 24 | end address: 1024
+----------result printing end-----------
+cmd> malloc size: 70
+start entry: start address : 1000 | size: 24
+iterate time: 0
+iterate time: 1
+iterate time: 2
+iterate time: 3
+matched entry: start address : 500 | size: 70
+****maps after fmalloc****
+area address: 0x00005610E58242A0
+malloc size: 1024
+--------total entries: 3-----------
+start address: 100 | size: 30 | end address: 130
+start address: 300 | size: 50 | end address: 350
+start address: 1000 | size: 24 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 3 entries need to be clean
+3 entries | start address: 0x00005610E5824688
+2 entries | start address: 0x00005610E5824304
+1 entries | start address: 0x00005610E58243CC
+#
+# trace04.txt - fmalloc 空闲区分配完，再free
+#
+initial process done!
+area address: 0x00005558DAA0B2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 1024
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x00005558DAA0B2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1024 size: 0
+cmd> malloc size: 100
+start entry: start address : 1024 | size: 0
+not enough free space can be allocated
+****maps after fmalloc****
+area address: 0x00005558DAA0B2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1024 size: 0
+cmd> free address: 10, size: 100
+唯一表项为空，只需更改表项内容
+****maps after ffree****
+area address: 0x00005558DAA0B2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 10 size: 100
+cmd> 
+clear process start: 1 entries need to be clean
+1 entries | start address: 0x00005558DAA0B2AA
+#
+# trace05.txt - 只有一个表项，且与要释放区域相邻
+#
+initial process done!
+area address: 0x000056257F8772A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 500
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x000056257F8772A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 500 size: 524
+cmd> free address: 400, size: 200
+one entry in map
+与该地址相交addr: 500, size: 524,modifying...
+****maps after ffree****
+area address: 0x000056257F8772A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 400 size: 624
+cmd> 
+clear process start: 1 entries need to be clean
+1 entries | start address: 0x000056257F877430
+#
+# trace06.txt - 只有一个表项，不相邻释放区域
+#
+initial process done!
+area address: 0x00005623BEFE52A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 500
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x00005623BEFE52A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 500 size: 524
+cmd> free address: 100, size: 200
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x00005623BEFE52A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 200 | end address: 300
+start address: 500 | size: 524 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 2 entries need to be clean
+2 entries | start address: 0x00005623BEFE5494
+1 entries | start address: 0x00005623BEFE5304
+#
+# trace07.txt - 多表项，与前空闲区相邻，不与后空闲区相邻
+#
+initial process done!
+area address: 0x00005631FDBF12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 600
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x00005631FDBF12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 600 size: 424
+cmd> free address: 100, size: 100
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x00005631FDBF12A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 600 | size: 424 | end address: 1024
+----------result printing end-----------
+cmd> free address: 150, size: 200
+多表项，与前空闲区相邻，不与后面的空闲区相邻
+****maps after ffree****
+area address: 0x00005631FDBF12A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 250 | end address: 350
+start address: 600 | size: 424 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 2 entries need to be clean
+2 entries | start address: 0x00005631FDBF14F8
+1 entries | start address: 0x00005631FDBF1304
+#
+# trace08.txt - 多表项，同时与前后两个空闲区相邻
+#
+initial process done!
+area address: 0x00005555DE4F32A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 500
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x00005555DE4F32A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 500 size: 524
+cmd> free address: 100, size: 200
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x00005555DE4F32A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 200 | end address: 300
+start address: 500 | size: 524 | end address: 1024
+----------result printing end-----------
+cmd> free address: 250, size: 400
+多表项，同时与前后两个空闲区相邻
+****maps after ffree****
+area address: 0x00005555DE4F32A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 100 size: 924
+cmd> 
+clear process start: 1 entries need to be clean
+1 entries | start address: 0x00005555DE4F3304
+#
+# trace09.txt - 多表项，不与前后空闲区相邻
+#
+initial process done!
+area address: 0x000055DDC09F12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 600
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x000055DDC09F12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 600 size: 424
+cmd> free address: 100, size: 100
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x000055DDC09F12A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 600 | size: 424 | end address: 1024
+----------result printing end-----------
+cmd> free address: 300, size: 100
+多表项，不与前后空闲区相邻
+****maps after ffree****
+area address: 0x000055DDC09F12A0
+malloc size: 1024
+--------total entries: 3-----------
+start address: 100 | size: 100 | end address: 200
+start address: 300 | size: 100 | end address: 400
+start address: 600 | size: 424 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 3 entries need to be clean
+3 entries | start address: 0x000055DDC09F14F8
+2 entries | start address: 0x000055DDC09F1304
+1 entries | start address: 0x000055DDC09F13CC
+#
+# trace10.txt - 多表项，之和后空闲区相邻
+#
+initial process done!
+area address: 0x0000555F0ADD72A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 600
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x0000555F0ADD72A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 600 size: 424
+cmd> free address: 100, size: 100
+one entry in map
+不与其他空闲区相邻，创建新项
+****maps after ffree****
+area address: 0x0000555F0ADD72A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 600 | size: 424 | end address: 1024
+----------result printing end-----------
+cmd> free address: 500, size: 200
+多表项，只和后空闲区相邻
+****maps after ffree****
+area address: 0x0000555F0ADD72A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 500 | size: 524 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 2 entries need to be clean
+2 entries | start address: 0x0000555F0ADD7494
+1 entries | start address: 0x0000555F0ADD7304
+#
+# trace11.txt - 释放地址大于所有表项
+#
+initial process done!
+area address: 0x0000558DF03C12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 1024
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x0000558DF03C12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1024 size: 0
+cmd> free address: 100, size: 100
+唯一表项为空，只需更改表项内容
+****maps after ffree****
+area address: 0x0000558DF03C12A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 100 size: 100
+cmd> free address: 300, size: 50
+one entry in map
+****maps after ffree****
+area address: 0x0000558DF03C12A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 300 | size: 50 | end address: 350
+----------result printing end-----------
+cmd> free address: 500, size: 300
+释放地址大于所有表项
+****maps after ffree****
+area address: 0x0000558DF03C12A0
+malloc size: 1024
+--------total entries: 3-----------
+start address: 300 | size: 50 | end address: 350
+start address: 100 | size: 100 | end address: 200
+start address: 500 | size: 300 | end address: 800
+----------result printing end-----------
+cmd> 
+clear process start: 3 entries need to be clean
+3 entries | start address: 0x0000558DF03C1304
+2 entries | start address: 0x0000558DF03C1494
+1 entries | start address: 0x0000558DF03C13CC
+#
+# trace12.txt - 释放地址在最后一个表项附近
+#
+initial process done!
+area address: 0x000055E4BBC562A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 1024
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x000055E4BBC562A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1024 size: 0
+cmd> free address: 100, size: 100
+唯一表项为空，只需更改表项内容
+****maps after ffree****
+area address: 0x000055E4BBC562A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 100 size: 100
+cmd> free address: 800, size: 124
+one entry in map
+****maps after ffree****
+area address: 0x000055E4BBC562A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 800 | size: 124 | end address: 924
+----------result printing end-----------
+cmd> free address: 824, size: 200
+释放地址在最后一个表项附近
+****maps after ffree****
+area address: 0x000055E4BBC562A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 800 | size: 224 | end address: 1024
+----------result printing end-----------
+cmd> 
+clear process start: 2 entries need to be clean
+2 entries | start address: 0x000055E4BBC56304
+1 entries | start address: 0x000055E4BBC565C0
+#
+# trace13.txt - 释放地址小于任意表项，结束地址在空闲区外
+#
+initial process done!
+area address: 0x000055E1044F82A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 1024
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x000055E1044F82A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1024 size: 0
+cmd> free address: 100, size: 100
+唯一表项为空，只需更改表项内容
+****maps after ffree****
+area address: 0x000055E1044F82A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 100 size: 100
+cmd> free address: 500, size: 300
+one entry in map
+****maps after ffree****
+area address: 0x000055E1044F82A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 500 | size: 300 | end address: 800
+----------result printing end-----------
+cmd> free address: 10, size: 400
+释放地址小于任意表项，结束地址在空闲区外
+****maps after ffree****
+area address: 0x000055E1044F82A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 10 | size: 400 | end address: 410
+start address: 500 | size: 300 | end address: 800
+----------result printing end-----------
+cmd> 
+clear process start: 2 entries need to be clean
+2 entries | start address: 0x000055E1044F8494
+1 entries | start address: 0x000055E1044F82AA
+#
+# trace14.txt - 释放地址小于任意表项，结束地址在空闲区内
+#
+initial process done!
+area address: 0x0000561C9E7CD2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 0 size: 1024
+cmd> malloc size: 1024
+start entry: start address : 0 | size: 1024
+iterate time: 0
+matched entry: start address : 0 | size: 1024
+****maps after fmalloc****
+area address: 0x0000561C9E7CD2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 1024 size: 0
+cmd> free address: 100, size: 100
+唯一表项为空，只需更改表项内容
+****maps after ffree****
+area address: 0x0000561C9E7CD2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 100 size: 100
+cmd> free address: 500, size: 200
+one entry in map
+****maps after ffree****
+area address: 0x0000561C9E7CD2A0
+malloc size: 1024
+--------total entries: 2-----------
+start address: 100 | size: 100 | end address: 200
+start address: 500 | size: 200 | end address: 700
+----------result printing end-----------
+cmd> free address: 10, size: 600
+释放地址小于任意表项，结束地址在空闲区内
+****maps after ffree****
+area address: 0x0000561C9E7CD2A0
+malloc size: 1024
+--------total entries: 1-----------
+start address: 10 size: 690
+cmd> 
+clear process start: 1 entries need to be clean
+1 entries | start address: 0x0000561C9E7CD2AA

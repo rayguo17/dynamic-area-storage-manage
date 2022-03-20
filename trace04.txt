@@ -1,0 +1,6 @@
+#
+# trace04.txt - fmalloc 空闲区分配完，再free
+#
+malloc 1024
+malloc 100
+free 10 100

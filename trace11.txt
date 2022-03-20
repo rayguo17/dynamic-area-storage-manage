@@ -1,0 +1,7 @@
+#
+# trace11.txt - 释放地址大于所有表项
+#
+malloc 1024
+free 100 100
+free 300 50
+free 500 300
