@@ -11,11 +11,11 @@ struct map_t {
     struct map_t *next, *prior;
 };
 typedef struct map_t map;
-map *coremap=NULL;
+map *coremap=NULL; /* 原始表项头*/
 char prompt[] = "cmd> ";
-int malloc_size;
-char *initial_addr;
-map *cur_map;
+int malloc_size; /*总区域大小 */
+char *initial_addr; /*malloc得到的地址起始位置 */
+map *cur_map;  /*fmalloc相关表项头 */
 int total=0; //链表节点个数
 int verbose;
 #define SIZE sizeof(map)
@@ -158,7 +158,6 @@ int parseline(char *cmdline,char **argv)
 
 char *fmalloc(map **maps,int size)
 {
-
     char *result;
     //start to iterate map through cur_map
     int it_time = 0;
@@ -202,8 +201,8 @@ char *fmalloc(map **maps,int size)
 int ffree(map **maps,char *addr, int size)
 {
     char *start_addr, *end_addr;
-    start_addr=addr;
-    end_addr = start_addr+size;
+    start_addr=addr; //要释放区域的起始地址
+    end_addr = start_addr+size; //要释放区域的结束地址
     //first check limit
     if(start_addr<initial_addr || start_addr>initial_addr+malloc_size){
         unix_error("space to be freed not in range!");
