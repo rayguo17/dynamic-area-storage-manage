@@ -7,7 +7,7 @@
 #include <unistd.h>
 struct map_t {
     unsigned m_size;
-    char *m_addr;
+    char *m_addr;//haha
     struct map_t *next, *prior;
 };
 typedef struct map_t map;
